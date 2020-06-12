@@ -39,7 +39,7 @@ public class LwwElementDictionary<K, V> implements Dictionary<K, V, LwwElementDi
             adds.put(key, new TimestampedValue<>(value, timestamp));
         }
 
-        removeDuplicates(key);
+        cleanup(key);
     }
 
     /**
@@ -54,7 +54,7 @@ public class LwwElementDictionary<K, V> implements Dictionary<K, V, LwwElementDi
         // save max of existing and current timestamp
         removes.put(key, max(timestamp, removes.getOrDefault(key, MIN_VALUE)));
 
-        removeDuplicates(key);
+        cleanup(key);
     }
 
     /**
@@ -109,11 +109,15 @@ public class LwwElementDictionary<K, V> implements Dictionary<K, V, LwwElementDi
         removes.clear();
     }
 
-    private void removeDuplicates(final K key) {
-        removeDuplicates(key, adds, removes);
+    /**
+     * Removes entry from adds set if it exists in the removes set with a later timestamp.
+     * Likewise, removes entry from removes set if it exists in the adds set with a later timestamp.
+     */
+    private void cleanup(final K key) {
+        cleanup(key, adds, removes);
     }
 
-    private void removeDuplicates(final K key, final Map<K, TimestampedValue<V>> adds, final Map<K, Long> removes) {
+    private void cleanup(final K key, final Map<K, TimestampedValue<V>> adds, final Map<K, Long> removes) {
         if (adds.containsKey(key) && removes.containsKey(key)) {
             final long addTs = adds.get(key).getTimestamp();
             final long removeTs = removes.get(key);
